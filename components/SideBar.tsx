@@ -5,8 +5,18 @@ import ChatIcon from "@mui/icons-material/Chat";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import { Button, IconButton } from "@mui/material";
+import * as EmailValidator from "email-validator";
 
 function SideBar() {
+  const createChat = () => {
+    const input = prompt("hi");
+
+    if (!input) return null;
+
+    if (EmailValidator.validate(input)) {
+      window.location.href = `https://web.whatsapp.com/send?phone=${input}`;
+    }
+  };
   return (
     <Container>
       <Header>
@@ -27,7 +37,7 @@ function SideBar() {
         <SearchIcon />
         <SearchInput placeholder="Search in chat" />
       </Search>
-      <SideBarButton>Start a new chat</SideBarButton>
+      <SideBarButton onClick={createChat}>Start a new chat</SideBarButton>
     </Container>
   );
 }

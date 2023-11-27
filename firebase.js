@@ -1,6 +1,7 @@
-import farebase from "farebase";
+import { initializeApp, getApp, getApps } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBQTrwqVmLnPV-cF9HQcBOVRwYzswsOqX4",
   authDomain: "watsapp-10c09.firebaseapp.com",
@@ -11,6 +12,10 @@ const firebaseConfig = {
   measurementId: "G-TBYRM645HD",
 };
 
-const app = !firebase.apps.length
-  ? firebase.initializeApp(firebaseConfig)
-  : firebase.app;
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+export { db, auth, provider };
