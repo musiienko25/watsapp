@@ -1,48 +1,120 @@
-import React from "react";
 import styled from "styled-components";
-import Avatar from "@mui/material/Avatar";
+import { Avatar, IconButton, Button } from "@mui/material";
 import ChatIcon from "@mui/icons-material/Chat";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
-import { Button, IconButton } from "@mui/material";
 import * as EmailValidator from "email-validator";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { useCollection } from "react-firebase-hooks/firestore";
+import { signOut } from "firebase/auth";
+import { auth, db } from "../firebase";
+import { collection, addDoc, query, where } from "firebase/firestore";
+import Chat from "./Chat";
 
-function SideBar() {
+function Sidebar() {
+  const [user] = useAuthState(auth);
+  const userChatRef = query(
+    collection(db, "chats"),
+    where("users", "array-contains", user?.email)
+  );
+  const [chatsSnapshot] = useCollection(userChatRef);
+
   const createChat = () => {
-    const input = prompt("hi");
+    const input = prompt(
+      "Please enter an email address for the user you wish to chat with:"
+    );
 
-    if (!input) return null;
+    if (!input) {
+      return null;
+    }
 
-    if (EmailValidator.validate(input)) {
-      window.location.href = `https://web.whatsapp.com/send?phone=${input}`;
+    if (
+      EmailValidator.validate(input) &&
+      !chatAlreadyExists(input) &&
+      input !== user?.email
+    ) {
+      // add chat into DB 'chats' collection if it doesnt exists and is a valid email
+      const col = collection(db, "chats");
+      addDoc(col, {
+        users: [user?.email, input],
+      });
     }
   };
+
+  const chatAlreadyExists = (recipientEmail: any) =>
+    !!chatsSnapshot?.docs.find(
+      (chat) =>
+        chat.data().users.find((user: any) => user === recipientEmail) !==
+        undefined
+    );
+
   return (
     <Container>
       <Header>
-        <UserAvatar />
-        <IconsConsContainter>
+        <UserAvatar
+          onClick={() => {
+            signOut(auth);
+          }}
+        />
+
+        <IconsContainer>
           <IconButton>
-            {" "}
             <ChatIcon />
           </IconButton>
 
           <IconButton>
-            {" "}
             <MoreVertIcon />
           </IconButton>
-        </IconsConsContainter>
+        </IconsContainer>
       </Header>
+
       <Search>
         <SearchIcon />
-        <SearchInput placeholder="Search in chat" />
+        <SearchInput placeholder="Search in Chats" />
       </Search>
-      <SideBarButton onClick={createChat}>Start a new chat</SideBarButton>
+
+      <SidebarButton onClick={createChat}>Start a New Chat</SidebarButton>
+
+      {chatsSnapshot?.docs.map((chat) => (
+        <Chat key={chat.id} id={chat.id} users={chat.data().users} />
+      ))}
     </Container>
   );
 }
 
-export default SideBar;
+export default Sidebar;
+
+const Container = styled.div`
+  flex: 0.45;
+  border-right: 1px solid whitesmoke;
+  height: 100vh;
+  min-width: 300px;
+  max-width: 350px;
+  overflow-y: scroll;
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+`;
+
+const Search = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 2px;
+`;
+
+const SidebarButton = styled(Button)`
+  width: 100%;
+
+  &&& {
+    border-top: 1px solid whitesmoke;
+    border-bottom: 1px solid whitesmoke;
+    color: black;
+  }
+`;
 
 const SearchInput = styled.input`
   outline-width: 0;
@@ -50,38 +122,25 @@ const SearchInput = styled.input`
   flex: 1;
 `;
 
-const SideBarButton = styled(Button)`
-  width: 100%;
-  &&& {
-    border-top: 1px solid whitesmoke;
-    border-bottom: 1px solid whitesmoke;
-  }
-`;
-
-const Container = styled.div``;
-
-const Search = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  border-radius: 2px;
-`;
-
 const Header = styled.div`
   display: flex;
   position: sticky;
-  justify-content: space-between;
   top: 0;
-  background: white;
+  background-color: white;
   z-index: 1;
   justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  height: 80px;
+  border-bottom: 1px solid whitesmoke;
 `;
 
 const UserAvatar = styled(Avatar)`
   cursor: pointer;
+
   :hover {
     opacity: 0.8;
   }
 `;
 
-const IconsConsContainter = styled.div``;
+const IconsContainer = styled.div``;
